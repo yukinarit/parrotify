@@ -26,7 +26,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["script.js", "jquery-3.5.1.min.js", "jquery.xpath.js"]
+      "js": ["jquery-3.5.1.min.js", "jquery.xpath.js", "script.js"]
     }
   ],
   "manifest_version": 2
