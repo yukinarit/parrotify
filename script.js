@@ -97,6 +97,7 @@ function parrotify() {
     console.debug('[after] innerText:', elm.innerText, 'innerHTML', elm.innerHTML);
   }
 }
+
 class State {
   constructor() {
     this.shouldUpdate = false;
