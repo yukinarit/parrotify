@@ -1,6 +1,6 @@
-const parrot = 'https://cultofthepartyparrot.com/parrots/hd/parrot.gif';
+const PARROT_URL = 'https://cultofthepartyparrot.com/parrots/hd/parrot.gif';
 
-console.info('%c.', `font-size: 1px; line-height: 70px; padding: 30px 60px; background: url("${parrot}");`);
+console.info('%c.', `font-size: 1px; line-height: 70px; padding: 30px 60px; background: url("${PARROT_URL}");`);
 
 const EmojiSizes = {
     h1: 32,
@@ -81,23 +81,6 @@ function isChildOf(elm, tags) {
   return false;
 }
 
-function parrotify() {
-  const elms = $(document).xpath("//*[text()[contains(.,':parrot:')]]");
-  console.debug('Fetched by xpath:', elms);
-
-  for (elm of filterTag(elms)) {
-    console.debug('[before] innerText:', elm.innerText, 'innerHTML', elm.innerHTML);
-    const tag = elm.tagName.toLowerCase();
-    const width = EmojiSize.get(tag);
-    console.debug('tagName: ', tag, ', width: ', width);
-
-    newHTML = elm.innerHTML.replace(/:parrot:/g, `<img src="${parrot}" style="width: ${width}px">`);
-    elm.innerHTML = newHTML;
-
-    console.debug('[after] innerText:', elm.innerText, 'innerHTML', elm.innerHTML);
-  }
-}
-
 class State {
   constructor() {
     this.shouldUpdate = false;
@@ -105,24 +88,44 @@ class State {
   }
 }
 
-$(() => {
-  var state = new State();
-  parrotify();
+class Parrotify {
+  constructor() {
+    this.state = new State();
+    // Start observer to watch DOM changes.
+    this.observer = new MutationObserver((list, observer) => {
+      console.debug('Updated', list);
+      this.state.shouldUpdate = true;
+    });
+    this.observer.observe(document, { attribute: false, childList: true, subtree: true, characterData: true });
 
-  // Start observer to watch DOM changes.
-  const observer = new MutationObserver((list, observer) => {
-    console.debug('Updated', list);
-    state.shouldUpdate = true;
-  });
-  observer.observe(document, { attribute: false, childList: true, subtree: true, characterData: true });
+    // Start timer to parrotify.
+    setTimeout(() => {
+      const now = Date.now();
+      if (this.state.shouldUpdate) {
+        this.state.shouldUpdate = false;
+        this.state.lastUpdated = Date.now();
+        this.run();
+      }
+    }, 500);
+  }
 
-  // Start timer to parrotify.
-  setTimeout(() => {
-    const now = Date.now();
-    if (state.shouldUpdate) {
-      state.shouldUpdate = false;
-      state.lastUpdated = Date.now();
-      parrotify();
+  run() {
+    const elms = $(document).xpath("//*[text()[contains(.,':parrot:')]]");
+    console.debug('Fetched by xpath:', elms);
+
+    for (elm of filterTag(elms)) {
+      console.debug('[before] innerText:', elm.innerText, 'innerHTML', elm.innerHTML);
+      const tag = elm.tagName.toLowerCase();
+      const width = EmojiSize.get(tag);
+      console.debug('tagName: ', tag, ', width: ', width);
+
+      const newHTML = elm.innerHTML.replace(/:parrot:/g, `<img src="${PARROT_URL}" style="width: ${width}px">`);
+      elm.innerHTML = newHTML;
+
+      console.debug('[after] innerText:', elm.innerText, 'innerHTML', elm.innerHTML);
     }
-  }, 500);
-});
+  }
+}
+
+const parrot = new Parrotify();
+parrot.run();

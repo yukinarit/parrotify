@@ -1,7 +1,7 @@
 {
-  "name": "helloworld",
+  "name": "parrotify",
   "version": "0.0.1",
-  "description": "My first google chrome extension!",
+  "description": "Let parrot dance in your browser!",
   "permissions": ["storage", "declarativeContent", "activeTab"],
   "background": {
     "scripts": ["background.js"],
@@ -26,6 +26,8 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
+      "run_at": "document_idle",
+      "all_frames": true,
       "js": ["jquery-3.5.1.min.js", "jquery.xpath.js", "script.js"]
     }
   ],
