@@ -1,7 +1,5 @@
 const PARROT_URL = 'https://cultofthepartyparrot.com/parrots/hd/parrot.gif';
 
-console.info('%c.', `font-size: 1px; line-height: 70px; padding: 30px 60px; background: url("${PARROT_URL}");`);
-
 const EmojiSizes = {
     h1: 32,
     h2: 24,
@@ -26,7 +24,7 @@ const IGNORE_TAGS = [
  * Filter elements by tag.
  */
 function* filterTag(elms) {
-  for (elm of elms) {
+  for (const elm of elms) {
     if (!IGNORE_TAGS.includes(elm.tagName.toLowerCase())) {
       if (!isChildOf(elm, IGNORE_TAGS)) {
         yield elm;
@@ -110,10 +108,11 @@ class Parrotify {
   }
 
   run() {
+    console.info('%c.', `font-size: 1px; line-height: 70px; padding: 30px 60px; background: url("${PARROT_URL}");`);
     const elms = $(document).xpath("//*[text()[contains(.,':parrot:')]]");
     console.debug('Fetched by xpath:', elms);
 
-    for (elm of filterTag(elms)) {
+    for (const elm of filterTag(elms)) {
       console.debug('[before] innerText:', elm.innerText, 'innerHTML', elm.innerHTML);
       const tag = elm.tagName.toLowerCase();
       const width = EmojiSize.get(tag);
@@ -127,5 +126,15 @@ class Parrotify {
   }
 }
 
-const parrot = new Parrotify();
-parrot.run();
+chrome.storage.sync.get('urls', ({urls}) => {
+  console.debug('Read URL List from storage:', urls);
+  for (const url of urls) {
+    console.debug(`Check pattern: ${url}, Current URL: ${location.href}`);
+    const re = new RegExp(url);
+    if (!re.test(location.href)) {
+      return;
+    }
+  }
+  const parrot = new Parrotify();
+  parrot.run();
+});
