@@ -1,3 +1,5 @@
+/*global chrome*/
+
 const PARROT_URL = 'https://cultofthepartyparrot.com/parrots/hd/parrot.gif';
 
 const EmojiSizes = {
@@ -109,7 +111,7 @@ class Parrotify {
 
   run() {
     console.info('%c.', `font-size: 1px; line-height: 70px; padding: 30px 60px; background: url("${PARROT_URL}");`);
-    const elms = $(document).xpath("//*[text()[contains(.,':parrot:')]]");
+    const elms = $(document).xpath("//*[text()[contains(.,':')]]");
     console.debug('Fetched by xpath:', elms);
 
     for (const elm of filterTag(elms)) {
@@ -127,7 +129,10 @@ class Parrotify {
 }
 
 chrome.storage.sync.get('urls', ({urls}) => {
-  console.debug('Read URL List from storage:', urls);
+  console.debug('Load URL List from storage:', urls);
+  if (!urls || urls.length === 0) {
+    return;
+  }
   for (const url of urls) {
     console.debug(`Check pattern: ${url}, Current URL: ${location.href}`);
     const re = new RegExp(url);
