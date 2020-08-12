@@ -2,6 +2,10 @@
 
 const PARROT_URL = 'https://cultofthepartyparrot.com/parrots/hd/parrot.gif';
 
+function logParrot() {
+  console.info('%c.', `font-size: 1px; line-height: 70px; padding: 30px 60px; background: url("${PARROT_URL}");`);
+}
+
 const EmojiSizes = {
     h1: 32,
     h2: 24,
@@ -97,10 +101,11 @@ class Parrotify {
       this.state.shouldUpdate = true;
     });
     this.observer.observe(document, { attribute: false, childList: true, subtree: true, characterData: true });
+    // Parrotify task queue. Pop and process one by one during browser idle time.
+    this.queue = []
 
     // Start timer to parrotify.
     setTimeout(() => {
-      const now = Date.now();
       if (this.state.shouldUpdate) {
         this.state.shouldUpdate = false;
         this.state.lastUpdated = Date.now();
@@ -109,22 +114,56 @@ class Parrotify {
     }, 500);
   }
 
+  /**
+   * Start Parrotifying :parrot:.
+   */
   run() {
-    console.info('%c.', `font-size: 1px; line-height: 70px; padding: 30px 60px; background: url("${PARROT_URL}");`);
+    logParrot();
+    this.queue = this.queue.concat(this.load());
+    console.debug('Queue updated', this.queue);
+
+    if (this.queue.length > 0) {
+      requestIdleCallback(this.runBackground.bind(this));
+    }
+  }
+
+  /**
+   * Run Parrotifying on background using requestIdCallback.
+   */
+  runBackground(deadline) {
+    console.debug('runBackground', this.queue);
+    while (deadline.timeRemaining() > 0 && this.queue.length > 0) {
+      console.debug(`Processing: queue=${this.queue.length}`);
+      this.replaceElement(this.queue.pop());
+    }
+    if (this.queue.length > 0) {
+      requestIdleCallback(this.runBackground.bind(this));
+    }
+  }
+
+  /**
+   * Load elements that may contain Emoji.
+   */
+  load() {
     const elms = $(document).xpath("//*[text()[contains(.,':')]]");
     console.debug('Fetched by xpath:', elms);
 
-    for (const elm of filterTag(elms)) {
-      console.debug('[before] innerText:', elm.innerText, 'innerHTML', elm.innerHTML);
-      const tag = elm.tagName.toLowerCase();
-      const width = EmojiSize.get(tag);
-      console.debug('tagName: ', tag, ', width: ', width);
+    return Array.from(filterTag(elms));
+  }
 
-      const newHTML = elm.innerHTML.replace(/:parrot:/g, `<img src="${PARROT_URL}" style="width: ${width}px">`);
-      elm.innerHTML = newHTML;
+  /**
+   * Replace emoji text to emoji image.
+   */
+  replaceElement(elm) {
+    console.debug('[before] innerText:', elm.innerText, 'innerHTML', elm.innerHTML);
+    const tag = elm.tagName.toLowerCase();
+    const width = EmojiSize.get(tag);
+    console.debug('tagName: ', tag, ', width: ', width);
 
-      console.debug('[after] innerText:', elm.innerText, 'innerHTML', elm.innerHTML);
-    }
+    const newHTML = elm.innerHTML.replace(/:parrot:/g, `<img src="${PARROT_URL}" style="width: ${width}px">`);
+    elm.innerHTML = newHTML;
+
+    console.debug('[after] innerText:', elm.innerText, 'innerHTML', elm.innerHTML);
   }
 }
 
@@ -137,8 +176,10 @@ chrome.storage.sync.get('urls', ({urls}) => {
     console.debug(`Check pattern: ${url}, Current URL: ${location.href}`);
     const re = new RegExp(url);
     if (!re.test(location.href)) {
+      console.debug('URL didn\'t match')
       return;
     }
+    console.debug('URL matched. Let\'s parrotify! :parrot:')
   }
   const parrot = new Parrotify();
   parrot.run();
