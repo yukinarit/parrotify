@@ -1,8 +1,8 @@
 /*global chrome*/
-import React, { useState, useEffect } from 'react';
-import './App.css';
-import UrlList from './UrlList';
-import EmojiList from './EmojiList';
+import React, { useState, useEffect } from "react";
+import "./App.css";
+import UrlList from "./UrlList";
+import EmojiList from "./EmojiList";
 
 function App() {
   return (
@@ -10,7 +10,7 @@ function App() {
       <UrlList />
       <EmojiList />
     </div>
-  )
+  );
 }
 
 export default App;

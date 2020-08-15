@@ -31,5 +31,8 @@
       "last 1 safari version"
     ]
   },
-  "homepage": "."
+  "homepage": ".",
+  "devDependencies": {
+    "prettier": "2.0.5"
+  }
 }

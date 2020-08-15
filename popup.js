@@ -1,8 +1,7 @@
-
-const changeColor = document.getElementById('changeColor');
-chrome.storage.sync.get('color', (data) => {
+const changeColor = document.getElementById("changeColor");
+chrome.storage.sync.get("color", (data) => {
   changeColor.style.backgroundColor = data.color;
-  changeColor.setAttribute('value', data.color);
+  changeColor.setAttribute("value", data.color);
 });
 
 changeColor.onclick = (element) => {
@@ -14,4 +13,4 @@ changeColor.onclick = (element) => {
     );
   });
   */
-}
+};
