@@ -17,6 +17,22 @@ class Emoji {
   }
 }
 
+let EMOJI_PARROT = new Emoji("parrot.gift", "");
+
+fetch(chrome.runtime.getURL("./images/parrot.gif"))
+  .then(res => {
+    if (res.status !== 200) {
+      console.error("Failed to fetch default Parrot emoji", res);
+      return;
+    }
+    const image = loadImage(res.blob());
+    console.debug("Default emoji loaded", image);
+    const emoji = Emoji.from_file(image);
+    EMOJI_PARROT.data = emoji.data;
+});
+
+//const EMOJI_PARROT = new Emoji("parrot.gif");
+
 /**
  * Create an Emoji name from filename.
  */
@@ -61,7 +77,7 @@ function loadImage(file) {
  * EmojiList component displays list of emojis.
  */
 function EmojiList() {
-  const [emojis, setEmojis] = useState([]);
+  const [emojis, setEmojis] = useState([EMOJI_PARROT]);
 
   // Load emojis from chrome extension storage.
   useEffect(() => {
