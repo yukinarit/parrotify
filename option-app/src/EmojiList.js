@@ -34,6 +34,21 @@ fetch(chrome.runtime.getURL("./images/parrot.gif"))
 //const EMOJI_PARROT = new Emoji("parrot.gif");
 
 /**
+ * Load default parrot emoji.
+ */
+async function loadDefaultEmoji() {
+  const res = await fetch(chrome.runtime.getURL("./images/parrot.gif"));
+  if (res.status !== 200) {
+    console.error("Failed to fetch default Parrot emoji", res);
+    return;
+  }
+  const image = await loadImage(await res.blob());
+  const parrot = new Emoji("parrot.gif", image.data);
+  console.debug("Default parrot emoji loaded", parrot);
+  return parrot;
+}
+
+/**
  * Create an Emoji name from filename.
  */
 function createEmojiName(filename) {
@@ -81,13 +96,25 @@ function EmojiList() {
 
   // Load emojis from chrome extension storage.
   useEffect(() => {
-    chrome.storage.sync.get("emojis", ({ emojis }) => {
+    chrome.storage.local.get("emojis", ({ emojis }) => {
       console.debug("Fetch emojis from chrome extension storage:", emojis);
-      if (emojis) {
+
+      loadDefaultEmoji().then(parrot => {
+        if (!emojis) {
+          emojis = [parrot];
+        }
+        console.debug("Set initial emojis", emojis);
         setEmojis(emojis);
-      }
+      });
     });
   }, []);
+
+  // Sync updated emoji list to chrome storage.
+  useEffect(() => {
+    chrome.storage.local.set({ emojis: emojis }, () => {
+      console.debug("Emoji List was updated: ", emojis);
+    });
+  }, [emojis]);
 
   /**
    * An inner component that forms a table of Emojis.
