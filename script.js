@@ -141,8 +141,45 @@ class State {
   }
 }
 
+
+/**
+ * Load default parrot emoji.
+ */
+async function loadDefaultEmoji() {
+  const res = await fetch(chrome.runtime.getURL("./images/parrot.gif"));
+  if (res.status !== 200) {
+    console.error("Failed to fetch default Parrot emoji", res);
+    return;
+  }
+  const image = await loadImage(await res.blob());
+  const parrot = {filename: "parrot.gif", name: ":parrot:", data: image.data};
+  console.debug("Default parrot emoji loaded", parrot);
+  return parrot;
+}
+
+/**
+ * Load image and return as promise.
+ *
+ * Code taken from: https://gist.github.com/resistancecanyon/e1dd2d43519810cf75150a8caf4c5fec
+ */
+function loadImage(file) {
+  return new Promise((resolve, _reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      return resolve({
+        data: reader.result,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 class Parrotify {
-  constructor() {
+  constructor(emojis) {
+    this.emojis = emojis;
     this.state = new State();
     // Start observer to watch DOM changes.
     this.observer = new MutationObserver((list, observer) => {
@@ -217,13 +254,25 @@ class Parrotify {
     );
     const tag = elm.tagName.toLowerCase();
     const width = EmojiSize.get(tag);
-    console.debug("tagName: ", tag, ", width: ", width);
+    console.debug("tagName:", tag);
+    console.debug("width ", width);
 
-    const newHTML = elm.innerHTML.replace(
-      /:parrot:/g,
-      `<img src="${PARROT_URL}" style="width: ${width}px">`
-    );
-    elm.innerHTML = newHTML;
+    for (const m of elm.innerHTML.matchAll(/:\w+:/g)) {
+      console.debug("Matched", m);
+      for (const w of m) {
+        console.debug("Matched word", w);
+        for (const emoji of this.emojis) {
+          console.debug("Iterate emoji", emoji);
+          if (emoji.name === w) {
+            const newHTML = elm.innerHTML.replace(
+              w,
+              `<img src="${emoji.data}" style="width: ${width}px">`
+            );
+            elm.innerHTML = newHTML;
+          }
+        }
+      }
+    }
 
     console.debug(
       "[after] innerText:",
@@ -234,8 +283,24 @@ class Parrotify {
   }
 }
 
-chrome.storage.sync.get("urls", ({ urls }) => {
-  console.debug("Load URL List from storage:", urls);
+chrome.storage.local.get(["urls", "emojis"], ({ urls, emojis }) => {
+  console.info("Load URL List from storage:", urls);
+  console.info("Load Emoji List from storage:", emojis);
+
+  if (!urls) {
+    urls = ["github.com"];
+    chrome.storage.local.set({urls: urls})
+  }
+
+  if (!emojis) {
+    emojis = [];
+    loadDefaultEmoji().then(parrot => {
+      console.debug("Set initial emojis", parrot);
+      emojis.push(parrot);
+      chrome.storage.local.set({emojis: emojis})
+    });
+  }
+
   if (!urls || urls.length === 0) {
     return;
   }
@@ -248,6 +313,6 @@ chrome.storage.sync.get("urls", ({ urls }) => {
     }
     console.debug("URL matched. Let's parrotify! :parrot:");
   }
-  const parrot = new Parrotify();
+  const parrot = new Parrotify(emojis);
   parrot.run();
 });

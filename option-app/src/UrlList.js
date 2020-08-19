@@ -11,17 +11,17 @@ function UrlList() {
 
   // Load urls from chrome extension storage.
   useEffect(() => {
-    chrome.storage.sync.get("urls", ({ urls }) => {
+    chrome.storage.local.get("urls", ({ urls: storage_urls }) => {
       console.debug("Fetch urls from chrome extension storage:", urls);
-      if (!urls) {
-        setUrls(urls);
+      if (storage_urls) {
+        setUrls(storage_urls);
       }
     });
   }, []);
 
   // Sync updated url list to chrome storage.
   useEffect(() => {
-    chrome.storage.sync.set({ urls: urls }, () => {
+    chrome.storage.local.set({ urls: urls }, () => {
       console.debug("URL List was updated: ", urls);
     });
   }, [urls]);
@@ -51,7 +51,7 @@ function UrlList() {
                 });
               }}
             >
-              Delete
+            Delete
             </button>
           </td>
         </tr>

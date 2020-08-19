@@ -34,22 +34,8 @@ fetch(chrome.runtime.getURL("./images/parrot.gif"))
 //const EMOJI_PARROT = new Emoji("parrot.gif");
 
 /**
- * Load default parrot emoji.
- */
-async function loadDefaultEmoji() {
-  const res = await fetch(chrome.runtime.getURL("./images/parrot.gif"));
-  if (res.status !== 200) {
-    console.error("Failed to fetch default Parrot emoji", res);
-    return;
-  }
-  const image = await loadImage(await res.blob());
-  const parrot = new Emoji("parrot.gif", image.data);
-  console.debug("Default parrot emoji loaded", parrot);
-  return parrot;
-}
-
-/**
  * Create an Emoji name from filename.
+ * @param {str} filename.
  */
 function createEmojiName(filename) {
   const name = filename.split(".").slice(0, -1).join(".");
@@ -98,14 +84,7 @@ function EmojiList() {
   useEffect(() => {
     chrome.storage.local.get("emojis", ({ emojis }) => {
       console.debug("Fetch emojis from chrome extension storage:", emojis);
-
-      loadDefaultEmoji().then(parrot => {
-        if (!emojis) {
-          emojis = [parrot];
-        }
-        console.debug("Set initial emojis", emojis);
-        setEmojis(emojis);
-      });
+      setEmojis(emojis);
     });
   }, []);
 
@@ -126,7 +105,7 @@ function EmojiList() {
           <td>{emoji.filename}</td>
           <td>{emoji.name}</td>
           <td>
-            <img src={emoji.data} alt={emoji.name} />
+            <img src={emoji.data} alt={emoji.name} style={{maxWidth: "30px", maxHeight: "auto"}} />
           </td>
         </tr>
       );
