@@ -141,7 +141,6 @@ class State {
   }
 }
 
-
 /**
  * Load default parrot emoji.
  */
@@ -152,7 +151,7 @@ async function loadDefaultEmoji() {
     return;
   }
   const image = await loadImage(await res.blob());
-  const parrot = {filename: "parrot.gif", name: ":parrot:", data: image.data};
+  const parrot = { filename: "parrot.gif", name: ":parrot:", data: image.data };
   console.debug("Default parrot emoji loaded", parrot);
   return parrot;
 }
@@ -289,30 +288,34 @@ chrome.storage.local.get(["urls", "emojis"], ({ urls, emojis }) => {
 
   if (!urls) {
     urls = ["github.com"];
-    chrome.storage.local.set({urls: urls})
+    chrome.storage.local.set({ urls: urls });
   }
 
   if (!emojis) {
     emojis = [];
-    loadDefaultEmoji().then(parrot => {
+    loadDefaultEmoji().then((parrot) => {
       console.debug("Set initial emojis", parrot);
       emojis.push(parrot);
-      chrome.storage.local.set({emojis: emojis})
+      chrome.storage.local.set({ emojis: emojis });
     });
   }
 
   if (!urls || urls.length === 0) {
     return;
   }
-  for (const url of urls) {
-    console.debug(`Check pattern: ${url}, Current URL: ${location.href}`);
+  const matched = urls.some((url) => {
+    console.debug(
+      `Check pattern: ${url}, Current URL: ${window.location.href}`
+    );
     const re = new RegExp(url);
-    if (!re.test(location.href)) {
-      console.debug("URL didn't match");
-      return;
-    }
-    console.debug("URL matched. Let's parrotify! :parrot:");
+    return re.test(window.location.href);
+  });
+  if (!matched) {
+    console.debug("URL didn't match");
+    return;
   }
+
+  console.debug("URL matched. Let's parrotify! :parrot:");
   const parrot = new Parrotify(emojis);
   parrot.run();
 });
