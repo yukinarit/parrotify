@@ -282,8 +282,19 @@ class Parrotify {
   }
 }
 
-chrome.storage.local.get(["urls", "emojis"], ({ urls, emojis }) => {
-  console.info("Load URL List from storage:", urls);
+function getLocal(key) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(key, (value) => {
+      console.debug(`GET STORAGE ${key} ${value}`);
+      return resolve(value[key]);
+    });
+  });
+}
+
+async function main() {
+  let urls = await getLocal("urls");
+  let emojis = await getLocal("emojis");
+  console.info("Load URL List from storage:", urls, typeof urls);
   console.info("Load Emoji List from storage:", emojis);
 
   if (!urls) {
@@ -318,4 +329,6 @@ chrome.storage.local.get(["urls", "emojis"], ({ urls, emojis }) => {
   console.debug("URL matched. Let's parrotify! :parrot:");
   const parrot = new Parrotify(emojis);
   parrot.run();
-});
+}
+
+main();
