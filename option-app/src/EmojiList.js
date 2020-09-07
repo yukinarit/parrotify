@@ -17,21 +17,23 @@ class Emoji {
   }
 }
 
+/**
+ * Emoji data.
+ */
+class EmojiSource {}
+
 let EMOJI_PARROT = new Emoji("parrot.gift", "");
 
-fetch(chrome.runtime.getURL("./images/parrot.gif"))
-  .then(res => {
-    if (res.status !== 200) {
-      console.error("Failed to fetch default Parrot emoji", res);
-      return;
-    }
-    const image = loadImage(res.blob());
-    console.debug("Default emoji loaded", image);
-    const emoji = Emoji.from_file(image);
-    EMOJI_PARROT.data = emoji.data;
+fetch(chrome.runtime.getURL("./images/parrot.gif")).then((res) => {
+  if (res.status !== 200) {
+    console.error("Failed to fetch default Parrot emoji", res);
+    return;
+  }
+  const image = loadImage(res.blob());
+  console.debug("Default emoji loaded", image);
+  const emoji = Emoji.from_file(image);
+  EMOJI_PARROT.data = emoji.data;
 });
-
-//const EMOJI_PARROT = new Emoji("parrot.gif");
 
 /**
  * Create an Emoji name from filename.
@@ -74,6 +76,15 @@ function loadImage(file) {
   });
 }
 
+function getLocal(key) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(key, (value) => {
+      console.debug(`GET STORAGE ${key} ${value}`);
+      return resolve(value[key]);
+    });
+  });
+}
+
 /**
  * EmojiList component displays list of emojis.
  */
@@ -105,7 +116,11 @@ function EmojiList() {
           <td>{emoji.filename}</td>
           <td>{emoji.name}</td>
           <td>
-            <img src={emoji.data} alt={emoji.name} style={{maxWidth: "30px", maxHeight: "auto"}} />
+            <img
+              src={emoji.data}
+              alt={emoji.name}
+              style={{ maxWidth: "30px", maxHeight: "auto" }}
+            />
           </td>
         </tr>
       );
