@@ -10,7 +10,7 @@ class Emoji {
     this.filename = filename;
     this.name = createEmojiName(filename);
     this.data = data;
-    this.data = null;
+    this.url = null;
   }
 
   static from_file(file) {
@@ -18,7 +18,7 @@ class Emoji {
   }
 }
 
-let EMOJI_PARROT = new Emoji("parrot.gift", "./images/parrot.gif");
+let EMOJI_PARROT = new Emoji("parrot.gift", "images/parrot.gif");
 
 /*
 fetch(chrome.runtime.getURL("./images/parrot.gif")).then((res) => {
@@ -105,7 +105,7 @@ function EmojiList() {
       const emojis = [];
       const list = await getLocal("emojis");
       for (const src of list) {
-        const data = await getLocal(src.url);
+        const data = await getLocal(src.path);
         const emoji = new Emoji(src.filename, data);
         emojis.push(emoji);
         console.info("Fetching emojis from chrome extension storage:", emoji);
@@ -124,7 +124,7 @@ function EmojiList() {
           return {
             name: e.name,
             filename: e.filename,
-            url: e.url,
+            path: e.path,
           };
         })
       );

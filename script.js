@@ -1,4 +1,5 @@
 /*global chrome*/
+/*global $*/
 
 const PARROT_URL = "https://cultofthepartyparrot.com/parrots/hd/parrot.gif";
 
@@ -145,13 +146,17 @@ class State {
  * Load default parrot emoji.
  */
 async function loadDefaultEmoji() {
-  const res = await fetch(chrome.runtime.getURL("./images/parrot.gif"));
+  const res = await fetch(chrome.runtime.getURL("images/parrot.gif"));
   if (res.status !== 200) {
     console.error("Failed to fetch default Parrot emoji", res);
     return;
   }
   const image = await loadImage(await res.blob());
-  const parrot = { filename: "parrot.gif", name: ":parrot:", data: image.data };
+  const parrot = {
+    filename: "parrot.gif",
+    name: "parrot",
+    data: image.data,
+  };
   console.debug("Default parrot emoji loaded", parrot);
   return parrot;
 }
@@ -291,6 +296,17 @@ function getLocal(key) {
   });
 }
 
+function setLocal(key, value) {
+  return new Promise((resolve) => {
+    const data = {};
+    data[key] = value;
+    chrome.storage.local.set(data, () => {
+      console.debug(`SET STORAGE ${key} ${value}`);
+      return resolve();
+    });
+  });
+}
+
 async function main() {
   let urls = await getLocal("urls");
   let emojis = await getLocal("emojis");
@@ -303,11 +319,14 @@ async function main() {
   }
 
   if (!emojis) {
-    emojis = [];
-    loadDefaultEmoji().then((parrot) => {
-      console.debug("Set initial emojis", parrot);
-      emojis.push(parrot);
-      chrome.storage.local.set({ emojis: emojis });
+    const parrot = await loadDefaultEmoji();
+    console.debug("Set initial emojis", parrot);
+    emojis = [parrot];
+    await setLocal("emojis", emojis);
+    chrome.runtime.onInstalled.addListener((details) => {
+      if (details.reason === "install") {
+        setLocal(parrot.name, parrot);
+      }
     });
   }
 
