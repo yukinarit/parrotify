@@ -6,31 +6,30 @@ import "./EmojiList.css";
  * Emoji data.
  */
 class Emoji {
-  constructor(filename, data) {
+  constructor(filename, file) {
     this.filename = filename;
     this.name = createEmojiName(filename);
-    this.data = data;
+    this.data = file.data;
     this.url = null;
   }
 
   static from_file(file) {
-    return new Emoji(file.name, file.data);
+    return new Emoji(file.name, file);
   }
 }
 
-let EMOJI_PARROT = new Emoji("parrot.gift", "images/parrot.gif");
-
-/*
-fetch(chrome.runtime.getURL("./images/parrot.gif")).then((res) => {
-  if (res.status !== 200) {
-    console.error("Failed to fetch default Parrot emoji", res);
-    return;
-  }
-  const image = loadImage(res.blob());
-  console.debug("Default emoji loaded", image);
-  const emoji = Emoji.from_file(image);
-  EMOJI_PARROT.data = emoji.data;
-});
+/* Unused?
+function setInitialEmoji() {
+  fetch(chrome.runtime.getURL("./images/parrot.gif")).then((res) => {
+    if (res.status !== 200) {
+      console.error("Failed to fetch default Parrot emoji", res);
+      return;
+    }
+    const image = loadImage(res.blob());
+    console.debug("Default emoji loaded", image);
+    const emoji = Emoji.from_file(image);
+  });
+}
 */
 
 /**
@@ -76,7 +75,7 @@ function loadImage(file) {
 function getLocal(key) {
   return new Promise((resolve) => {
     chrome.storage.local.get(key, (value) => {
-      console.debug(`GET STORAGE ${key} ${value}`);
+      console.debug("GET STORAGE:", key, value);
       return resolve(value[key]);
     });
   });
@@ -87,7 +86,7 @@ function setLocal(key, value) {
     const data = {};
     data[key] = value;
     chrome.storage.local.set(data, () => {
-      console.debug(`SET STORAGE ${key} ${value}`);
+      console.debug("SET STORAGE:", key, value);
       return resolve();
     });
   });
@@ -105,7 +104,7 @@ function EmojiList() {
       const emojis = [];
       const list = await getLocal("emojis");
       for (const src of list) {
-        const data = await getLocal(src.path);
+        const data = await getLocal(src.name);
         const emoji = new Emoji(src.filename, data);
         emojis.push(emoji);
         console.info("Fetching emojis from chrome extension storage:", emoji);
@@ -118,18 +117,19 @@ function EmojiList() {
   // Sync updated emoji list to chrome storage.
   useEffect(() => {
     async function set() {
-      await setLocal(
-        "emojis",
-        emojis.map((e) => {
-          return {
-            name: e.name,
-            filename: e.filename,
-            path: e.path,
-          };
-        })
-      );
-      for (const [name, data] of emojis) {
-        await setLocal(name, data);
+      // Save Emoji list.
+      const list = emojis.map(e => {
+        return {
+          name: e.name,
+          filename: e.filename,
+          path: e.path,
+        };
+      });
+      await setLocal("emojis", list);
+
+      // Save Emoji data.
+      for (const emoji of list) {
+        await setLocal(emoji.name, emoji);
       }
       console.debug("Emoji List was updated: ", emojis);
     }
@@ -140,6 +140,7 @@ function EmojiList() {
    * An inner component that forms a table of Emojis.
    */
   function EmojiTable({ emojis }) {
+    console.debug("Displaying emoji list: ", emojis);
     const rows = (emojis || []).map((emoji) => {
       return (
         <tr>

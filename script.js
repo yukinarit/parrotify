@@ -267,7 +267,7 @@ class Parrotify {
         console.debug("Matched word", w);
         for (const emoji of this.emojis) {
           console.debug("Iterate emoji", emoji);
-          if (emoji.name === w) {
+          if (`:${emoji.name}:` === w) {
             const newHTML = elm.innerHTML.replace(
               w,
               `<img src="${emoji.data}" style="width: ${width}px">`
@@ -290,7 +290,7 @@ class Parrotify {
 function getLocal(key) {
   return new Promise((resolve) => {
     chrome.storage.local.get(key, (value) => {
-      console.debug(`GET STORAGE ${key} ${value}`);
+      console.debug("GET STORAGE: ", key, value);
       return resolve(value[key]);
     });
   });
@@ -301,7 +301,7 @@ function setLocal(key, value) {
     const data = {};
     data[key] = value;
     chrome.storage.local.set(data, () => {
-      console.debug(`SET STORAGE ${key} ${value}`);
+      console.debug("SET STORAGE: ", key, value);
       return resolve();
     });
   });
@@ -310,7 +310,7 @@ function setLocal(key, value) {
 async function main() {
   let urls = await getLocal("urls");
   let emojis = await getLocal("emojis");
-  console.info("Load URL List from storage:", urls, typeof urls);
+  console.info("Load URL List from storage:", urls);
   console.info("Load Emoji List from storage:", emojis);
 
   if (!urls) {
@@ -318,17 +318,18 @@ async function main() {
     chrome.storage.local.set({ urls: urls });
   }
 
-  if (!emojis) {
+  //if (!emojis) {
     const parrot = await loadDefaultEmoji();
     console.debug("Set initial emojis", parrot);
     emojis = [parrot];
     await setLocal("emojis", emojis);
-    chrome.runtime.onInstalled.addListener((details) => {
-      if (details.reason === "install") {
-        setLocal(parrot.name, parrot);
-      }
-    });
-  }
+    // TODO "onInstalled" is undefined for content script.
+    //chrome.runtime.onInstalled.addListener((details) => {
+    //  if (details.reason === "install") {
+        await setLocal(parrot.name, parrot);
+    //  }
+    //});
+  //}
 
   if (!urls || urls.length === 0) {
     return;
@@ -346,8 +347,8 @@ async function main() {
   }
 
   console.debug("URL matched. Let's parrotify! :parrot:");
-  const parrot = new Parrotify(emojis);
-  parrot.run();
+  const parrotify = new Parrotify(emojis);
+  parrotify.run();
 }
 
 main();
