@@ -41,6 +41,90 @@ function* filterTag(elms) {
   }
 }
 
+
+function mapObject(obj, func) {
+  for (const key of Object.keys(obj)) {
+    obj[key] = func(obj[key]);
+  }
+  return obj;
+}
+
+/**
+ * Emoji dictionary in sync with LocalStorage.
+ *
+ * Those keys are used to save Emoji in LocalStorage:
+ *
+ * "emojis": emoji index object where
+ *   * key is emoji name e.g. "parrot"
+ *   * value is a emoji filename in the form of "<emoji_name>"
+ *
+ * "<emoji_name>: contains actual Emoji data
+ *
+ */
+class EmojiDictionary {
+  constructor() {
+    this.dict = {}
+  }
+
+  async load() {
+    const emojis = await getLocal("emojis");
+    console.info("Load Emoji List from storage:", emojis);
+
+    if (emojis) {
+      for (const name of Object.values(emojis)) {
+        const emoji = await getLocal(name);
+        this.dict[name] = emoji;
+      }
+    }
+
+    // Load default parrot emoji.
+    if (!("parrot" in Object.keys(this.dict))) {
+      const parrot = await this.loadDefaultEmoji();
+      await this.set(parrot);
+      console.debug("Default emoji set", parrot);
+    }
+
+    console.info('Loaded', this.dict);
+  }
+
+  async get(name) {
+    return this.dict[name];
+  }
+
+  async set(emoji) {
+    this.dict[emoji.name] = emoji;
+    const list = mapObject({...this.dict}, v => v.name);
+    console.debug(list);
+    await setLocal("emojis", list);
+    await setLocal(emoji.name, emoji);
+  }
+
+  * iter() {
+    for (const name of Object.keys(this.dict)) {
+      yield this.dict[name];
+    }
+  }
+
+  /**
+   * Load default parrot emoji.
+   */
+  async loadDefaultEmoji() {
+    const res = await fetch(chrome.runtime.getURL("images/parrot.gif"));
+    if (res.status !== 200) {
+      console.error("Failed to fetch default Parrot emoji", res);
+      return;
+    }
+    const image = await loadImage(await res.blob());
+    const parrot = {
+      filename: "parrot.gif",
+      name: "parrot",
+      data: image.data,
+    };
+    console.debug("Default parrot emoji loaded", parrot);
+    return parrot;
+  }
+}
+
 /*
  * Test if a given string valid URL.
  */
@@ -143,25 +227,6 @@ class State {
 }
 
 /**
- * Load default parrot emoji.
- */
-async function loadDefaultEmoji() {
-  const res = await fetch(chrome.runtime.getURL("images/parrot.gif"));
-  if (res.status !== 200) {
-    console.error("Failed to fetch default Parrot emoji", res);
-    return;
-  }
-  const image = await loadImage(await res.blob());
-  const parrot = {
-    filename: "parrot.gif",
-    name: "parrot",
-    data: image.data,
-  };
-  console.debug("Default parrot emoji loaded", parrot);
-  return parrot;
-}
-
-/**
  * Load image and return as promise.
  *
  * Code taken from: https://gist.github.com/resistancecanyon/e1dd2d43519810cf75150a8caf4c5fec
@@ -185,7 +250,7 @@ class Parrotify {
   constructor(emojis) {
     this.emojis = emojis;
     this.state = new State();
-    // Start observer to watch DOM changes.
+    // Start observer to watch any changes in DOM.
     this.observer = new MutationObserver((list, observer) => {
       console.debug("Updated", list);
       this.state.shouldUpdate = true;
@@ -210,7 +275,7 @@ class Parrotify {
   }
 
   /**
-   * Start Parrotifying :parrot:.
+   * Start Parrotify! :parrot:
    */
   run() {
     logParrot();
@@ -223,7 +288,7 @@ class Parrotify {
   }
 
   /**
-   * Run Parrotifying on background using requestIdCallback.
+   * Run Parrotify on background using requestIdCallback.
    */
   runBackground(deadline) {
     console.debug("runBackground", this.queue);
@@ -265,7 +330,7 @@ class Parrotify {
       console.debug("Matched", m);
       for (const w of m) {
         console.debug("Matched word", w);
-        for (const emoji of this.emojis) {
+        for (const emoji of this.emojis.iter()) {
           console.debug("Iterate emoji", emoji);
           if (`:${emoji.name}:` === w) {
             const newHTML = elm.innerHTML.replace(
@@ -290,7 +355,7 @@ class Parrotify {
 function getLocal(key) {
   return new Promise((resolve) => {
     chrome.storage.local.get(key, (value) => {
-      console.debug("GET STORAGE: ", key, value);
+      console.debug("GET STORAGE:", key, value[key]);
       return resolve(value[key]);
     });
   });
@@ -301,7 +366,7 @@ function setLocal(key, value) {
     const data = {};
     data[key] = value;
     chrome.storage.local.set(data, () => {
-      console.debug("SET STORAGE: ", key, value);
+      console.debug("SET STORAGE:", key, value);
       return resolve();
     });
   });
@@ -309,27 +374,14 @@ function setLocal(key, value) {
 
 async function main() {
   let urls = await getLocal("urls");
-  let emojis = await getLocal("emojis");
   console.info("Load URL List from storage:", urls);
-  console.info("Load Emoji List from storage:", emojis);
+  const emojis = new EmojiDictionary();
+  await emojis.load();
 
   if (!urls) {
     urls = ["github.com"];
     chrome.storage.local.set({ urls: urls });
   }
-
-  //if (!emojis) {
-    const parrot = await loadDefaultEmoji();
-    console.debug("Set initial emojis", parrot);
-    emojis = [parrot];
-    await setLocal("emojis", emojis);
-    // TODO "onInstalled" is undefined for content script.
-    //chrome.runtime.onInstalled.addListener((details) => {
-    //  if (details.reason === "install") {
-        await setLocal(parrot.name, parrot);
-    //  }
-    //});
-  //}
 
   if (!urls || urls.length === 0) {
     return;

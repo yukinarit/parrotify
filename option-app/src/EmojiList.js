@@ -18,20 +18,6 @@ class Emoji {
   }
 }
 
-/* Unused?
-function setInitialEmoji() {
-  fetch(chrome.runtime.getURL("./images/parrot.gif")).then((res) => {
-    if (res.status !== 200) {
-      console.error("Failed to fetch default Parrot emoji", res);
-      return;
-    }
-    const image = loadImage(res.blob());
-    console.debug("Default emoji loaded", image);
-    const emoji = Emoji.from_file(image);
-  });
-}
-*/
-
 /**
  * Create an Emoji name from filename.
  * @param {str} filename.
@@ -75,7 +61,7 @@ function loadImage(file) {
 function getLocal(key) {
   return new Promise((resolve) => {
     chrome.storage.local.get(key, (value) => {
-      console.debug("GET STORAGE:", key, value);
+      console.debug("GET STORAGE:", key, value[key]);
       return resolve(value[key]);
     });
   });
@@ -92,6 +78,13 @@ function setLocal(key, value) {
   });
 }
 
+function mapObject(obj, func) {
+  for (const key of Object.keys(obj)) {
+    obj[key] = func(obj[key]);
+  }
+  return obj;
+}
+
 /**
  * EmojiList component displays list of emojis.
  */
@@ -103,9 +96,9 @@ function EmojiList() {
     async function get() {
       const emojis = [];
       const list = await getLocal("emojis");
-      for (const src of list) {
-        const data = await getLocal(src.name);
-        const emoji = new Emoji(src.filename, data);
+      for (const filename of Object.values(list)) {
+        const data = await getLocal(filename);
+        const emoji = new Emoji(data.filename, data);
         emojis.push(emoji);
         console.info("Fetching emojis from chrome extension storage:", emoji);
       }
@@ -118,20 +111,16 @@ function EmojiList() {
   useEffect(() => {
     async function set() {
       // Save Emoji list.
-      const list = emojis.map(e => {
-        return {
-          name: e.name,
-          filename: e.filename,
-          path: e.path,
-        };
-      });
-      await setLocal("emojis", list);
+      if (emojis) {
+        const list = mapObject({...emojis}, e => e.name);
+        await setLocal("emojis", list);
 
-      // Save Emoji data.
-      for (const emoji of list) {
-        await setLocal(emoji.name, emoji);
+        // Save Emoji data.
+        for (const emoji of emojis) {
+          await setLocal(emoji.name, emoji);
+        }
+        console.debug("Emoji List was updated: ", emojis);
       }
-      console.debug("Emoji List was updated: ", emojis);
     }
     set();
   }, [emojis]);
