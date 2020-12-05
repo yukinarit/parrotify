@@ -1,6 +1,9 @@
 /*global chrome*/
 import React, { useState, useEffect } from "react";
+import { AgGridColumn, AgGridReact } from "ag-grid-react";
 import "./EmojiList.css";
+import 'ag-grid-community/dist/styles/ag-grid.css';
+import 'ag-grid-community/dist/styles/ag-theme-alpine.css';
 
 /**
  * Emoji data.
@@ -125,34 +128,32 @@ function EmojiList() {
     set();
   }, [emojis]);
 
+  const [gridApi, setGridApi] = useState(null);
+  const [gridColumnApi, setGridColumnApi] = useState(null);
+
   /**
    * An inner component that forms a table of Emojis.
    */
   function EmojiTable({ emojis }) {
     console.debug("Displaying emoji list: ", emojis);
-    const rows = (emojis || []).map((emoji) => {
-      return (
-        <tr>
-          <td>{emoji.filename}</td>
-          <td>:{emoji.name}:</td>
-          <td>
-            <img
-              src={emoji.data}
-              alt={emoji.name}
-              style={{ maxWidth: "30px", maxHeight: "auto" }}
-            />
-          </td>
-        </tr>
-      );
-    });
-    return <table>{rows}</table>;
+
+    const imageRenderer = function(params) {
+        return `<img src="${params.data.data}" style="height: 30px; maxHeight: auto" />`;
+    }
+
+    return <div className="ag-theme-alpine" style={{ height: 400, width: 600 }}>
+      <AgGridReact rowData={emojis} domLayout='autoHeight'>
+        <AgGridColumn field="filename" filter={true} sortable={true}></AgGridColumn>
+        <AgGridColumn field="name" filter={true} sortable={true}></AgGridColumn>
+        <AgGridColumn headerName="Preview" field="data" cellRenderer={imageRenderer}></AgGridColumn>
+      </AgGridReact>
+    </div>;
   }
 
   return (
     <div>
       <input
         type="file"
-        className="emojiUpload"
         multiple
         onChange={async (e) => {
           const images = await loadImages(e);
