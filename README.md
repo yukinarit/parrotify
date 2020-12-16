@@ -10,6 +10,8 @@ Without Parrotify             |  With Parrotify
 
 Also, you can add your favorite emoji from option page.
 
+![](upload_emoji.gif)
+
 
 ## Installation
 
