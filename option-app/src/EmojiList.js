@@ -152,9 +152,12 @@ function EmojiList() {
 
   return (
     <div>
+      <label htmlFor="emojiUpload">Select emojis:</label>
       <input
+        id="emojiUpload"
         type="file"
         multiple
+        style={{ visibility: "hidden" }}
         onChange={async (e) => {
           const images = await loadImages(e);
           console.debug("New emoji uploaded:", emojis, images);
