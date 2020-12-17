@@ -1,7 +1,7 @@
 # Parrotify :thumbsupparrot:
 
 Parrotify is a google chrome extension to allow custom GIF emoji displayed in your browser!
-(This project is still in early stages! It's quite buggy!)
+(This project is still in early stages! It's so buggy!)
 
 
 Without Parrotify             |  With Parrotify
