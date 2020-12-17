@@ -10,10 +10,13 @@ Without Parrotify             |  With Parrotify
 
 ## Features
 
-Also, you can add your favorite emoji from option page.
+You can add your favorite emoji from option page.
 
 ![](upload_emoji.gif)
 
+Also, you can set an URL pattern to specify which host Parrotify runs on.
+
+![](set_url.gif)
 
 ## Installation
 
